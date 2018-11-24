@@ -28,7 +28,7 @@ GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags -static"
 GO := go
 
 # List the GOOS and GOARCH to build
-GOOSARCHES = $(shell cat .goosarch)
+GOOSARCHES = $(shell grep -v '^\#' .goosarch)
 
 # Set the graph driver as the current graphdriver if not set.
 DOCKER_GRAPHDRIVER := $(if $(DOCKER_GRAPHDRIVER),$(DOCKER_GRAPHDRIVER),$(shell docker info 2>&1 | grep "Storage Driver" | sed 's/.*: //'))
