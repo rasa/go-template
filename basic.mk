@@ -1,5 +1,10 @@
 # Set an output prefix, which is the local directory if not specified
+ifneq ($(OS),Windows_NT)
 PREFIX?=$(shell pwd)
+else
+PREFIX?=$(shell cygpath -a -m .)
+EXE_EXT=.exe
+endif
 
 # Set the build dir, where built cross-compiled binaries will be output
 BUILDDIR := ${PREFIX}/cross
@@ -38,18 +43,18 @@ ifeq ($(INTERACTIVE), 1)
 endif
 
 .PHONY: build
-build: prebuild $(NAME) ## Builds a dynamic executable or package.
+build: prebuild $(NAME)$(EXE_EXT) ## Builds a dynamic executable or package.
 
-$(NAME): $(wildcard *.go) $(wildcard */*.go) VERSION.txt
+$(NAME)$(EXE_EXT): $(wildcard *.go) $(wildcard */*.go) VERSION.txt
 	@echo "+ $@"
-	$(GO) build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME) .
-
+	$(GO) build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME)$(EXE_EXT) .
+	
 .PHONY: static
 static: prebuild ## Builds a static executable.
 	@echo "+ $@"
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) build \
 				-tags "$(BUILDTAGS) static_build" \
-				${GO_LDFLAGS_STATIC} -o $(NAME) .
+				${GO_LDFLAGS_STATIC} -o $(NAME)$(EXE_EXT) .
 
 all: clean build fmt lint test staticcheck vet install ## Runs a clean, build, fmt, lint, test, staticcheck, vet and install.
 
@@ -97,11 +102,11 @@ install: prebuild ## Installs the executable or package.
 define buildpretty
 mkdir -p $(BUILDDIR)/$(1)/$(2);
 GOOS=$(1) GOARCH=$(2) CGO_ENABLED=$(CGO_ENABLED) $(GO) build \
-	 -o $(BUILDDIR)/$(1)/$(2)/$(NAME) \
+	 -o $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)) \
 	 -a -tags "$(BUILDTAGS) static_build netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS_STATIC} .;
-md5sum $(BUILDDIR)/$(1)/$(2)/$(NAME) > $(BUILDDIR)/$(1)/$(2)/$(NAME).md5;
-sha256sum $(BUILDDIR)/$(1)/$(2)/$(NAME) > $(BUILDDIR)/$(1)/$(2)/$(NAME).sha256;
+md5sum $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)).md5;
+sha256sum $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)).sha256;
 endef
 
 .PHONY: cross
@@ -110,12 +115,13 @@ cross: *.go VERSION.txt prebuild ## Builds the cross-compiled binaries, creating
 	$(foreach GOOSARCH,$(GOOSARCHES), $(call buildpretty,$(subst /,,$(dir $(GOOSARCH))),$(notdir $(GOOSARCH))))
 
 define buildrelease
+echo -n;
 GOOS=$(1) GOARCH=$(2) CGO_ENABLED=$(CGO_ENABLED) $(GO) build \
-	 -o $(BUILDDIR)/$(NAME)-$(1)-$(2) \
+	 -o $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)) \
 	 -a -tags "$(BUILDTAGS) static_build netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS_STATIC} .;
-md5sum $(BUILDDIR)/$(NAME)-$(1)-$(2) > $(BUILDDIR)/$(NAME)-$(1)-$(2).md5;
-sha256sum $(BUILDDIR)/$(NAME)-$(1)-$(2) > $(BUILDDIR)/$(NAME)-$(1)-$(2).sha256;
+md5sum $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)).md5;
+sha256sum $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)).sha256;
 endef
 
 .PHONY: release
@@ -168,7 +174,7 @@ vendor: ## Updates the vendoring directory.
 .PHONY: clean
 clean: ## Cleanup any build binaries or packages.
 	@echo "+ $@"
-	$(RM) $(NAME)
+	$(RM) $(NAME)$(EXE_EXT)
 	$(RM) -r $(BUILDDIR)
 
 .PHONY: help
