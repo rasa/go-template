@@ -45,12 +45,12 @@ jobs:
           - cross/go-template-solaris-amd64
           - cross/go-template-solaris-amd64.md5
           - cross/go-template-solaris-amd64.sha256
-          - cross/go-template-windows-amd64
-          - cross/go-template-windows-amd64.md5
-          - cross/go-template-windows-amd64.sha256
-          - cross/go-template-windows-386
-          - cross/go-template-windows-386.md5
-          - cross/go-template-windows-386.sha256
+          - cross/go-template-windows-amd64.exe
+          - cross/go-template-windows-amd64.exe.md5
+          - cross/go-template-windows-amd64.exe.sha256
+          - cross/go-template-windows-386.exe
+          - cross/go-template-windows-386.exe.md5
+          - cross/go-template-windows-386.exe.sha256
         skip_cleanup: true
         on:
           tags: true
