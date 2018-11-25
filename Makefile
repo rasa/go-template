@@ -9,5 +9,9 @@ BUILDTAGS :=
 
 include basic.mk
 
+ifneq ("$(wildcard local.mk)", "")
+include local.mk
+endif
+
 .PHONY: prebuild
 prebuild:
