@@ -3,17 +3,17 @@
 set -e
 set -o pipefail
 
-OLD_OWNER=${OLD_OWNER:-Ross Smith II}
-OWNER=${OWNER:-Ross Smith II}
-
-BASE_HOST=${BASE_HOST:-https://github.com/}
-BASE_PROJECT=${BASE_PROJECT:-rasa/go-template}
-BASE_URL=${BASE_URL:-${BASE_HOST}${BASE_PROJECT}}
-
 PROJECT="$(pwd)"
 if [[ -n "$1" ]]; then
   PROJECT="$1"
 fi
+
+OWNER="${OWNER:-Ross Smith II}"
+
+BASE_OWNER="${BASE_OWNER:-Ross Smith II}"
+BASE_HOST="${BASE_HOST:-https://github.com/}"
+BASE_PROJECT="${BASE_PROJECT:-rasa/go-template}"
+BASE_URL="${BASE_URL:-${BASE_HOST}${BASE_PROJECT}}"
 
 BASE_PROJECT_NAME="$(basename "${BASE_PROJECT}")"
 BASE_PROJECT_DIR="$(dirname "${BASE_PROJECT}")"
@@ -31,11 +31,11 @@ main() {
   local file
 
   if [[ -n "$(find . -mindepth 1 | cut -c 1)" ]]; then
-  printf "%s: Sorry, the current directory contains files\\n" "$0" >&2
-  exit 1
+    printf "%s: Sorry, the current directory contains files\\n" "$0" >&2
+    exit 1
   fi
 
-  git clone --depth 1 --branch master "${BASE_URL}" . || exit
+  git clone --depth 1 --branch master "${BASE_URL}" .
   rm -fr .git
 
   files=()
@@ -50,7 +50,7 @@ main() {
 
   for file in "${files[@]}"; do
   sed -i -E "\
-    s|${OLD_OWNER}|${OWNER}|g;\
+    s|${BASE_OWNER}|${OWNER}|g;\
     s|${BASE_PROJECT}|${PROJECT}|g; \
     s|\\b${BASE_PROJECT_NAME}\\b|${PROJECT_NAME}|g;" "${file}"
   done
