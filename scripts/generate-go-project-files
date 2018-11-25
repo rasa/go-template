@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# insiped by https://github.com/jessfraz/dotfiles/blob/master/bin/generate-go-project-files
+set -e
+set -o pipefail
+
+OLD_OWNER=${OLD_OWNER:-Ross Smith II}
+OWNER=${OWNER:-Ross Smith II}
+
+BASE_HOST=${BASE_HOST:-https://github.com/}
+BASE_PROJECT=${BASE_PROJECT:-rasa/go-template}
+BASE_URL=${BASE_URL:-${BASE_HOST}${BASE_PROJECT}}
+
+PROJECT="$(pwd)"
+if [[ -n "$1" ]]; then
+  PROJECT="$1"
+fi
+
+BASE_PROJECT_NAME="$(basename "${BASE_PROJECT}")"
+BASE_PROJECT_DIR="$(dirname "${BASE_PROJECT}")"
+
+PROJECT_NAME="$(basename "${PROJECT}")"
+PROJECT_DIR="$(basename "$(dirname "${PROJECT}")")"
+if [[ "${PROJECT_DIR}" = "." ]]; then
+  PROJECT_DIR="${BASE_PROJECT_DIR}"
+fi
+PROJECT="${PROJECT_DIR}/${PROJECT_NAME}"
+
+main() {
+  local files
+  local REPLY
+  local file
+
+  if [[ -n "$(find . -mindepth 1 | cut -c 1)" ]]; then
+  printf "%s: Sorry, the current directory contains files\\n" "$0" >&2
+  exit 1
+  fi
+
+  git clone --depth 1 --branch master "${BASE_URL}" . || exit
+  rm -fr .git
+
+  files=()
+  while IFS=  read -r -d $'\0'; do
+    files+=("${REPLY}")
+  done < <(find . \( -type f -o -type l \) -print0)
+
+  git init
+  git commit --allow-empty -m "Initial (empty) commit"
+  git add .
+  git commit -m "Initial commit (from ${BASE_PROJECT})"
+
+  for file in "${files[@]}"; do
+  sed -i -E "\
+    s|${OLD_OWNER}|${OWNER}|g;\
+    s|${BASE_PROJECT}|${PROJECT}|g; \
+    s|\\b${BASE_PROJECT_NAME}\\b|${PROJECT_NAME}|g;" "${file}"
+  done
+
+  git commit -am "Change ${BASE_PROJECT} to ${PROJECT}"
+  git log
+}
+
+main
