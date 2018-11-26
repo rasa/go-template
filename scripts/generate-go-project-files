@@ -45,11 +45,7 @@ containsElement () {
 }
 
 main() {
-  local REPLY
-  local files
-  local lfiles
-  local xfiles
-  local sha
+  local REPLY files lfiles xfiles sha
 
   if [[ -n "$(find . -mindepth 1 | cut -c 1)" ]]; then
     printf "%s: Sorry, the current directory contains files\\n" "$0" >&2
