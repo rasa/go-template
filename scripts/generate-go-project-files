@@ -79,7 +79,7 @@ main() {
       continue
     fi
     files+=("${REPLY}")
-  done < <(find . \( -type f -o -type l \) -printf "%P\000")
+  done < <(find . \( -type f -o -type l \) -printf "%P\\000")
   git init --quiet
   git commit --allow-empty --quiet --message "Initial (empty) commit"
   git add .
