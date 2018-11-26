@@ -11,7 +11,7 @@ fi
 
 # Values to change it to:
 OWNER="${OWNER:-Ross Smith II}"
-EMAIL="${EMAIL:ross@smithii.com}"
+EMAIL="${EMAIL:-ross@smithii.com}"
 
 # Values found in the repository:
 BASE_OWNER="${BASE_OWNER:-Ross Smith II}"
@@ -19,7 +19,7 @@ BASE_EMAIL="${BASE_EMAIL:-ross@smithii.com}"
 
 # Location of repository:
 BASE_HOST="${BASE_HOST:-https://github.com/}"
-BASE_PROJECT="${BASE_PROJECT:-rasa/go-template}"
+BASE_PROJECT="${BASE_PROJECT:-rasa/go-template}" ##SKIP_REWRITING##
 BASE_URL="${BASE_URL:-${BASE_HOST}${BASE_PROJECT}}"
 
 BASE_PROJECT_NAME="$(basename "${BASE_PROJECT}")"
@@ -32,39 +32,71 @@ if [[ "${PROJECT_DIR}" = "." ]]; then
 fi
 PROJECT="${PROJECT_DIR}/${PROJECT_NAME}"
 
+# see https://stackoverflow.com/a/8574392
+containsElement () {
+  local e match="$1"
+  shift
+  for e; do
+    if [[ "${e}" == "${match}" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 main() {
-  local files
   local REPLY
-  local file
+  local files
+  local lfiles
+  local xfiles
 
   if [[ -n "$(find . -mindepth 1 | cut -c 1)" ]]; then
     printf "%s: Sorry, the current directory contains files\\n" "$0" >&2
     exit 1
   fi
 
-  git clone --depth 1 --branch master "${BASE_URL}" .
+  printf "Creating project %s from %s\\n" "${PROJECT}" "${BASE_URL}"
+
+  git clone --depth 1 --branch master --quiet "${BASE_URL}" .
+
+  # get list of executable files
+  xfiles=()
+  while IFS= read -r -d $'\0'; do
+    xfiles+=("${REPLY}")
+  done < <(git ls-files --stage -z | grep ^...7 | cut -f 2)
+
+  # get list of symlinks
+  lfiles=()
+  while IFS= read -r -d $'\0'; do
+    lfiles+=("${REPLY}")
+  done < <(git ls-files --stage -z | grep ^12 | cut -f 2)
+
   rm -fr .git
-
   files=()
-  while IFS=  read -r -d $'\0'; do
+  while IFS= read -r -d $'\0'; do
+    # skip rewriting symlinks as it's unneeded
+    if containsElement "${REPLY}" "${lfiles[@]}"; then
+      continue
+    fi
     files+=("${REPLY}")
-  done < <(find . \( -type f -o -type l \) -print0)
-
-  git init
-  git commit --allow-empty -m "Initial (empty) commit"
+  done < <(find . \( -type f -o -type l \) -printf "%P\000")
+  git init --quiet
+  git commit --allow-empty --quiet --message "Initial (empty) commit"
   git add .
-  git commit -m "Initial commit (from ${BASE_PROJECT})"
+  # restore executable bits if they've been unset
+  git update-index --chmod=+x "${xfiles[@]}"
+  git commit --quiet --message "Initial commit (from ${BASE_PROJECT})"
+  sed -i "\
+    /##SKIP_REWRITING##/ !{
+      s|\\b${BASE_OWNER}\\b|${OWNER}|g;
+      s|\\b${BASE_EMAIL}\\b|${EMAIL}|g;
+      s|\\b${BASE_PROJECT}\\b|${PROJECT}|g;
+      s|\\b${BASE_PROJECT_NAME}\\b|${PROJECT_NAME}|g; 
+    }
+   " "${files[@]}"
 
-  for file in "${files[@]}"; do
-  sed -i -E "\
-    s|${BASE_OWNER}|${OWNER}|g;\
-    s|${BASE_EMAIL}|${EMAIL}|g;\    
-    s|${BASE_PROJECT}|${PROJECT}|g; \
-    s|\\b${BASE_PROJECT_NAME}\\b|${PROJECT_NAME}|g;" "${file}"
-  done
-
-  git commit -am "Change ${BASE_PROJECT} to ${PROJECT}"
-  git log
+  git commit --all --quiet --message "Change ${BASE_PROJECT} to ${PROJECT}"
+  git log --oneline
 }
 
 main
