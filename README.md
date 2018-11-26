@@ -1,8 +1,9 @@
 # go-template
 
-[![Travis CI](https://img.shields.io/travis/rasa/go-template.svg?style=for-the-badge)](https://travis-ci.org/rasa/go-template)
-[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/rasa/go-template)
-[![Github All Releases](https://img.shields.io/github/downloads/rasa/go-template/total.svg?style=for-the-badge)](https://github.com/rasa/go-template/releases)
+[![Travis CI](https://img.shields.io/travis/rasa/go-template.svg)](https://travis-ci.org/rasa/go-template)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg)](https://godoc.org/github.com/rasa/go-template)
+[![Github All Releases](https://img.shields.io/github/downloads/rasa/go-template/total.svg)](https://github.com/rasa/go-template/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rasa/go-template)](https://goreportcard.com/report/github.com/rasa/go-template)
 
 {DESCRIPTION}
 
