@@ -177,6 +177,12 @@ clean: ## Cleanup any build binaries or packages.
 	$(RM) $(NAME)$(EXE_EXT)
 	$(RM) -r $(BUILDDIR)
 
+.PHONY:
+gofmt: ## Format all .go files via `gofmt -s` (simplify)
+	@echo "+ $@"
+	@gofmt -s -l . | grep -v '.pb.go:' | grep -v vendor
+	find . -iname '*.go' ! -ipath './vendor/*' | xargs gofmt -s -w
+
 .PHONY: help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | sed 's/^[^:]*://g' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
