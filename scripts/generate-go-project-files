@@ -3,14 +3,21 @@
 set -e
 set -o pipefail
 
+# Name of project to create in the form user/appname:
 PROJECT="$(pwd)"
 if [[ -n "$1" ]]; then
   PROJECT="$1"
 fi
 
+# Values to change it to:
 OWNER="${OWNER:-Ross Smith II}"
+EMAIL="${EMAIL:ross@smithii.com}"
 
+# Values found in the repository:
 BASE_OWNER="${BASE_OWNER:-Ross Smith II}"
+BASE_EMAIL="${BASE_EMAIL:-ross@smithii.com}"
+
+# Location of repository:
 BASE_HOST="${BASE_HOST:-https://github.com/}"
 BASE_PROJECT="${BASE_PROJECT:-rasa/go-template}"
 BASE_URL="${BASE_URL:-${BASE_HOST}${BASE_PROJECT}}"
@@ -51,6 +58,7 @@ main() {
   for file in "${files[@]}"; do
   sed -i -E "\
     s|${BASE_OWNER}|${OWNER}|g;\
+    s|${BASE_EMAIL}|${EMAIL}|g;\    
     s|${BASE_PROJECT}|${PROJECT}|g; \
     s|\\b${BASE_PROJECT_NAME}\\b|${PROJECT_NAME}|g;" "${file}"
   done
