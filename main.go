@@ -2,13 +2,13 @@
 package main
 
 import (
-  "fmt"
-  "os"
-  "path/filepath"
-  "runtime"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
-  "github.com/rasa/go-template/version"
+	"github.com/rasa/go-template/version"
 )
 
 func main() {
