@@ -30,3 +30,6 @@ $ go get github.com/rasa/go-template
 
 ```console
 ```
+## Documentation
+
+The project documentation is on [viewdocs.io](http://rasa.viewdocs.io/go-template/) as well as on [github.com](docs/index.md).
