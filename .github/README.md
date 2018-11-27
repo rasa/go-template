@@ -5,6 +5,9 @@
 [![Github All Releases](https://img.shields.io/github/downloads/rasa/go-template/total.svg)](https://github.com/rasa/go-template/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rasa/go-template)](https://goreportcard.com/report/github.com/rasa/go-template)
 <!--
+[![Codecov](https://img.shields.io/codecov/c/github/rasa/go-template.svg)](https://codecov.io/gh/rasa/go-template)
+-->
+<!--
 [![Join the chat at https://gitter.im/rasa/go-template](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/rasa/go-template?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 -->
 {DESCRIPTION}
