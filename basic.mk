@@ -11,7 +11,7 @@ BUILDDIR := ${PREFIX}/cross
 
 # Populate version variables
 # Add to compile time flags
-VERSION := $(shell cat VERSION.txt)
+VERSION := $(file <VERSION.txt)
 GITCOMMIT := $(shell git rev-parse --short HEAD)
 GITUNTRACKEDCHANGES := $(shell git status --porcelain --untracked-files=no)
 ifneq ($(GITUNTRACKEDCHANGES),)
@@ -48,7 +48,7 @@ build: prebuild $(NAME)$(EXE_EXT) ## Builds a dynamic executable or package.
 $(NAME)$(EXE_EXT): $(wildcard *.go) $(wildcard */*.go) VERSION.txt
 	@echo "+ $@"
 	$(GO) build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME)$(EXE_EXT) .
-	
+
 .PHONY: static
 static: prebuild ## Builds a static executable.
 	@echo "+ $@"
@@ -177,11 +177,15 @@ clean: ## Cleanup any build binaries or packages.
 	$(RM) $(NAME)$(EXE_EXT)
 	$(RM) -r $(BUILDDIR)
 
-.PHONY:
+.PHONY: gofmt
 gofmt: ## Format all .go files via `gofmt -s` (simplify)
 	@echo "+ $@"
 	@gofmt -s -l . | grep -v '.pb.go:' | grep -v vendor
 	find . -iname '*.go' ! -ipath './vendor/*' | xargs gofmt -s -w
+
+.PHONY: mailmap
+mailmap: ## Generate committer list to add to .mailmap
+	git log --format='%aN <%aE>' | sort -uf | grep -v -E '\w{8}-\w{4}-\w{4}-\w{4}-\w{10}' | grep -iv 'nobody@localhost'
 
 .PHONY: help
 help:
