@@ -57,6 +57,8 @@ main() {
   git clone --depth 1 --branch master --quiet "${BASE_URL}" .
   sha="$(git rev-parse --short HEAD)"
 
+  mv -f README.md .github/
+
   # get lists of executable files and symlinks
   xfiles=()
   lfiles=()
