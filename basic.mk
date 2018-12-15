@@ -1,9 +1,20 @@
-# Set an output prefix, which is the local directory if not specified
 ifneq ($(OS),Windows_NT)
-PREFIX?=$(shell pwd)
+	FIND?=find
+	# Set an output prefix, which is the local directory if not specified
+	PREFIX?=$(shell pwd)
+	STDERR?=/dev/stderr
+	SHA256SUM=sha256sum
 else
-PREFIX?=$(shell cygpath -a -m .)
-EXE_EXT=.exe
+	EXE_EXT?=.exe
+	CYGPATH?=$(shell where.exe cygpath.exe | tr "\\\\\\\\" "//")
+	FIND?=$(shell where find.exe | grep -E -iv "\\\\System32\\\\" | head -n 1 | tr "\\\\\\\\" "//")
+	PREFIX?=$(shell $(CYGPATH) -a -m .)
+	MSYS_ROOT?=C:/msys64
+	MSYS_ROOT:=$(shell echo '$(MSYS_ROOT)' | tr "\\\\\\\\" "//")
+	ifneq ($(wildcard $(MSYS_ROOT)/usr/bin/rm.exe),)
+		RM=$(MSYS_ROOT)/usr/bin/rm.exe -f
+	endif
+	SHA256SUM=$(shell where sha256sum | tr "\\\\\\\\" "//")
 endif
 
 # Set the build dir, where built cross-compiled binaries will be output
@@ -11,7 +22,7 @@ BUILDDIR := ${PREFIX}/cross
 
 # Populate version variables
 # Add to compile time flags
-VERSION := $(file <VERSION.txt)
+VERSION := $(shell cat <VERSION.txt)
 GITCOMMIT := $(shell git rev-parse --short HEAD)
 GITUNTRACKEDCHANGES := $(shell git status --porcelain --untracked-files=no)
 ifneq ($(GITUNTRACKEDCHANGES),)
@@ -61,12 +72,12 @@ all: clean build fmt lint test staticcheck vet install ## Runs a clean, build, f
 .PHONY: fmt
 fmt: ## Verifies all files have been `gofmt`ed.
 	@echo "+ $@"
-	@gofmt -s -l . | grep -v '.pb.go:' | grep -v vendor | tee /dev/stderr
+	@gofmt -s -l . | grep -E -v '(\.pb\.go:|vendor)' | tee $(STDERR)
 
 .PHONY: lint
 lint: ## Verifies `golint` passes.
 	@echo "+ $@"
-	@golint ./... | grep -v '.pb.go:' | grep -v vendor | tee /dev/stderr
+	@golint ./... | grep -E -v '(\.pb\.go:|vendor)' | tee $(STDERR)
 
 .PHONY: test
 test: prebuild ## Runs the go tests.
@@ -76,12 +87,12 @@ test: prebuild ## Runs the go tests.
 .PHONY: vet
 vet: ## Verifies `go vet` passes.
 	@echo "+ $@"
-	@$(GO) vet $(shell $(GO) list ./... | grep -v vendor) | grep -v '.pb.go:' | tee /dev/stderr
+	@$(GO) vet $(shell $(GO) list ./... | grep -E -v '(\.pb\.go:|vendor)') | tee $(STDERR)
 
 .PHONY: staticcheck
 staticcheck: ## Verifies `staticcheck` passes.
 	@echo "+ $@"
-	@staticcheck $(shell $(GO) list ./... | grep -v vendor) | grep -v '.pb.go:' | tee /dev/stderr
+	@staticcheck $(shell $(GO) list ./... | grep -E -v '(\.pb\.go:|vendor)') | tee $(STDERR)
 
 .PHONY: cover
 cover: prebuild ## Runs go test with coverage.
@@ -102,11 +113,11 @@ install: prebuild ## Installs the executable or package.
 define buildpretty
 mkdir -p $(BUILDDIR)/$(1)/$(2);
 GOOS=$(1) GOARCH=$(2) CGO_ENABLED=$(CGO_ENABLED) $(GO) build \
-	 -o $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)) \
+	 -o $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),.exe) \
 	 -a -tags "$(BUILDTAGS) static_build netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS_STATIC} .;
-md5sum $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)).md5;
-sha256sum $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),$(EXE_EXT)).sha256;
+md5sum $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),.exe) > $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),.exe).md5;
+$(SHA256SUM) $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),.exe) > $(BUILDDIR)/$(1)/$(2)/$(NAME)$(if $(findstring windows,$(1)),.exe).sha256;
 endef
 
 .PHONY: cross
@@ -117,11 +128,11 @@ cross: *.go VERSION.txt prebuild ## Builds the cross-compiled binaries, creating
 define buildrelease
 echo -n;
 GOOS=$(1) GOARCH=$(2) CGO_ENABLED=$(CGO_ENABLED) $(GO) build \
-	 -o $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)) \
+	 -o $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),.exe) \
 	 -a -tags "$(BUILDTAGS) static_build netgo" \
 	 -installsuffix netgo ${GO_LDFLAGS_STATIC} .;
-md5sum $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)).md5;
-sha256sum $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)) > $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),$(EXE_EXT)).sha256;
+md5sum $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),.exe) > $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),.exe).md5;
+$(SHA256SUM) $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),.exe) > $(BUILDDIR)/$(NAME)-$(1)-$(2)$(if $(findstring windows,$(1)),.exe).sha256;
 endef
 
 .PHONY: release
@@ -165,7 +176,7 @@ AUTHORS:
 .PHONY: vendor
 vendor: ## Updates the vendoring directory.
 	@$(RM) go.sum
-	@$(RM) -r vendor
+	@test -d vendor && $(RM) -r vendor || true
 	GO111MODULE=on $(GO) mod init || true
 	GO111MODULE=on $(GO) mod tidy
 	GO111MODULE=on $(GO) mod vendor
@@ -175,13 +186,13 @@ vendor: ## Updates the vendoring directory.
 clean: ## Cleanup any build binaries or packages.
 	@echo "+ $@"
 	$(RM) $(NAME)$(EXE_EXT)
-	$(RM) -r $(BUILDDIR)
+	$test -d $(BUILDDIR) && (RM) -r $(BUILDDIR)
 
 .PHONY: gofmt
 gofmt: ## Format all .go files via `gofmt -s` (simplify)
 	@echo "+ $@"
-	@gofmt -s -l . | grep -v '.pb.go:' | grep -v vendor
-	find . -iname '*.go' ! -ipath './vendor/*' | xargs gofmt -s -w
+	@gofmt -s -l . | grep -E -v '(\.pb\.go:|vendor)' || true
+	$(FIND) . -iname '*.go' ! -ipath './vendor/*' | xargs gofmt -s -w
 
 .PHONY: mailmap
 mailmap: ## Generate committer list to add to .mailmap
@@ -189,7 +200,7 @@ mailmap: ## Generate committer list to add to .mailmap
 
 .PHONY: help
 help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | sed 's/^[^:]*://g' | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | sed 's/^[^:]*://g' | awk 'BEGIN {FS = ":.*?## "}; {printf "%-30s %s\n", $$1, $$2}'
 
 check_defined = \
     $(strip $(foreach 1,$1, \
